@@ -1,0 +1,40 @@
+.jquery-chess-board {
+  position: relative;
+  border: 1px solid black; }
+  .jquery-chess-board .square {
+    position: absolute;
+    z-index: 0; }
+    .jquery-chess-board .square.light {
+      background: white; }
+      .jquery-chess-board .square.light.active {
+        background: #aaffaa; }
+      .jquery-chess-board .square.light.candidate {
+        background: #aaaaff; }
+    .jquery-chess-board .square.dark {
+      background: #999999; }
+      .jquery-chess-board .square.dark.active {
+        background: #449944; }
+      .jquery-chess-board .square.dark.candidate {
+        background: #444499; }
+
+.piece {
+  background: url(/pieces.png) no-repeat;
+  background-size: 1000% 200%;
+  position: absolute;
+  z-index: 1; }
+  .piece.black {
+    background-position-y: bottom; }
+  .piece.white {
+    background-position-y: top; }
+  .piece.king {
+    background-position-x: 0%; }
+  .piece.queen {
+    background-position-x: 11%; }
+  .piece.rook {
+    background-position-x: 22.5%; }
+  .piece.bishop {
+    background-position-x: 33.5%; }
+  .piece.knight {
+    background-position-x: 45%; }
+  .piece.pawn {
+    background-position-x: 55.5%; }

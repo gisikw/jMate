@@ -1,0 +1,43 @@
+.jquery-chess-board
+  position: relative
+  border: 1px solid black
+
+  .square
+    position: absolute
+    z-index: 0
+
+    &.light
+      background: #fff
+      &.active
+        background: #afa
+      &.candidate
+        background: #aaf
+    &.dark
+      background: #999
+      &.active
+        background: #494
+      &.candidate
+        background: #449
+
+.piece
+  background: url(/pieces.png) no-repeat
+  background-size: 1000% 200%
+  position: absolute
+  z-index: 1
+  
+  &.black
+    background-position-y: bottom
+  &.white
+    background-position-y: top
+  &.king
+    background-position-x: 0%
+  &.queen
+    background-position-x: 11%
+  &.rook
+    background-position-x: 22.5%
+  &.bishop
+    background-position-x: 33.5%
+  &.knight
+    background-position-x: 45%
+  &.pawn
+    background-position-x: 55.5%
