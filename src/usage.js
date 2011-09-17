@@ -1,0 +1,3 @@
+$(function(){
+  $("#board").chessboard()
+})

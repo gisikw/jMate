@@ -1,0 +1,22 @@
+GEM
+  remote: http://rubygems.org/
+  specs:
+    coffee-script (2.2.0)
+      coffee-script-source
+      execjs
+    coffee-script-source (1.1.2)
+    execjs (1.2.4)
+      multi_json (~> 1.0)
+    haml (3.1.2)
+    jsmin (1.0.1)
+    multi_json (1.0.3)
+    sass (3.1.7)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  coffee-script
+  haml
+  jsmin
+  sass

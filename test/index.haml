@@ -1,0 +1,15 @@
+!!!5
+%html
+  %head 
+    %title jMate Test Page
+    %script{:src=>"https://ajax.googleapis.com/ajax/libs/jquery/1.6.3/jquery.min.js"}
+    %script{:src=>"https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/jquery-ui.min.js"}
+    %script{:src=>'jquery.jmate.js'}
+    %link{:href=>"jquery.jmate.css",:type=>"text/css",:rel=>"stylesheet"}
+    %script
+      :plain
+        $(function(){
+          window.board = $('chess').chessboard()
+        })
+  %body
+    #chess{:style=>"width: 400px; height: 400px;"}
