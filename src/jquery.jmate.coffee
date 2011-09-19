@@ -33,6 +33,25 @@ toPiece = (c,col = false) ->
   else
     pieceDict[c] || 'pawn'
 
+parsePGN = (text) ->
+  returnable = []
+  lines = text.split("\n")
+  moveLines = []
+  for line in lines
+    continue if $.trim(line)[0] is '['
+    continue if $.trim(line).length is 0
+    moveLines.push($.trim(line))
+  moves = moveLines.join(' ')
+  moveCount = parseInt(moves.match(/\d+\./g).pop())
+  for i in [1..moveCount-1]
+    m = moves.match(new RegExp("#{i}\\..*#{i+1}\\.",'g'))[0]
+      .replace("#{i}.",'')
+      .replace("#{i+1}.",'')
+      .split(/\s+/)
+    returnable.push(m[0])
+    returnable.push(m[1])
+  returnable
+
 # Plugin
 $.fn.chessboard = ->
   # Instance Variables
@@ -44,9 +63,12 @@ $.fn.chessboard = ->
       long: true
       short: true
   enPassant         = null
+  sidebar           = null
   board             = $("div").addClass "jquery-chess-board"
   size              = 50 # Probably should accept a size parameter
   turn              = 'white'
+  pgn               = []
+  pgnIndex          = 0
 
   window.enPassant = ->
     enPassant
@@ -69,6 +91,27 @@ $.fn.chessboard = ->
         left: (toIFile(coords[0])-1)*size
         top:  (8-parseInt(coords[1]))*size
       .appendTo board
+
+  displayPGN = ->
+    board.width("#{12*size}px")
+    sidebar = $('<div>')
+    sidebar
+      .addClass('sidebar')
+      .css({left:"#{8*size}px"})
+      .height(size*8)
+      .width(size*4)
+      .appendTo(board)
+    $('<table>')
+      .height(size*7)
+      .appendTo(sidebar)
+    for i in [0..pgn.length] by 2
+      sidebar.find('table').append("<tr><td>#{pgn[i]}</td><td>#{pgn[i+1]}</td></tr>")
+    $("<div class='navigation'><span class='back'>Back</span><span class='next'>Next</span></div>")
+      .height(size)
+      .css({left:"#{8*size}px",top:"#{7*size}px"})
+      .appendTo(sidebar)
+    sidebar.find('span.next').click ->
+      handler.next()
 
   promotePawn = (fan) ->
     col = if fan[1] is '1' then 'black' else 'white'
@@ -225,8 +268,8 @@ $.fn.chessboard = ->
       returnable.push(toFAN(x-1,y+1)) if validSquare_(x-1,y+1) and not allyAt_(toFAN(x-1,y+1),col,ignore,add)
       unless threatCheck
         opCol = if col is 'white' then 'black' else 'white'
-        returnable.push(toFAN(x+2,y)) if castle[col]['short'] and (!pieceAt(toFAN(x+1,y))?) and (!pieceAt(toFAN(x+2,y))?) and (!threatens_(toFAN(x,y),opCol)) and (!threatens_(toFAN(x+1,y),opCol)) and (!threatens(toFAN(x+2,y),opCol))
-        returnable.push(toFAN(x-2,y)) if castle[col]['long'] and (!pieceAt(toFAN(x-1,y))?) and (!pieceAt(toFAN(x-2,y))?) and (!pieceAt(toFAN(x-3,y))) and (!threatens_(toFAN(x,y),opCol)) and (!threatens_(toFAN(x-1,y),opCol)) and (!threatens(toFAN(x-2,y),opCol))
+        returnable.push(toFAN(x+2,y)) if castle[col]['short'] and (!pieceAt(toFAN(x+1,y))?) and (!pieceAt(toFAN(x+2,y))?) and (!threatens_(toFAN(x,y),opCol)) and (!threatens_(toFAN(x+1,y),opCol)) and (!threatens_(toFAN(x+2,y),opCol))
+        returnable.push(toFAN(x-2,y)) if castle[col]['long'] and (!pieceAt(toFAN(x-1,y))?) and (!pieceAt(toFAN(x-2,y))?) and (!pieceAt(toFAN(x-3,y))) and (!threatens_(toFAN(x,y),opCol)) and (!threatens_(toFAN(x-1,y),opCol)) and (!threatens_(toFAN(x-2,y),opCol))
       returnable
     pawn:   (x,y,col,threatCheck,ignore,add) ->
       returnable = []
@@ -338,12 +381,55 @@ $.fn.chessboard = ->
           placePiece(toPiece(c,true),toFile((i%8)+1) + (8-(Math.floor(i/8))))
           i++
 
+    setPGN: (text) ->
+      pgn = parsePGN(text)
+      displayPGN()
+
+    next: ->
+      @movePGN(pgn[pgnIndex])
+      pgnIndex++
+
     movePGN: (move) ->
       castleRank = if turn is 'white' then 1 else 8
+      target = move.substring(move.length-2)
+      if move is 'O-O'
+        movePiece("e#{castleRank}","g#{castleRank}")
+        movePiece("h#{castleRank}","f#{castleRank}")
+      else if move is 'O-O-O'
+        movePiece("e#{castleRank}","c#{castleRank}")
+        movePiece("a#{castleRank}","d#{castleRank}")
+      else if move.length is 2
+        moved = false
+        for pawn in b(".pawn.#{turn}")
+          if $(pawn).data('pos') is move[0] + (parseInt(move[1]) + (if turn is 'white' then -1 else 1))
+            movePiece($(pawn).data('pos'),move)
+            moved = true
+        if !moved and move[1] is (if turn is 'white' then '4' else '5')
+          movePiece("#{move[0]}#{if turn is 'white' then 2 else 7}",move)
+      else if move.length is 3
+        for piece in b(".#{pieceDict[move[0]]}.#{turn}")
+          if target in candidateMoves($(piece).data('type'),$(piece).data('pos'))
+            movePiece($(piece).data('pos'),target)
+      else if 'x' in move and move.length is 4
+        if move[0].toUpperCase() is move[0] 
+          for piece in b(".#{pieceDict[move[0]]}.#{turn}")
+            if target in candidateMoves($(piece).data('type'),$(piece).data('pos'))
+              movePiece($(piece).data('pos'),target)
+        else
+          for pawn in b(".pawn.#{turn}")
+            if $(pawn).data('pos')[0] is move[0] 
+              movePiece($(pawn).data('pos'),target)
+      else
+        for piece in b(".#{pieceDict[move[0]]}.#{turn}")
+          if move[1] in $(piece).data('pos') and target in candidateMoves($(piece).data('type'),$(piece).data('pos'))
+            movePiece($(piece).data('pos'),target)
+
+      turn = if turn is "white" then "black" else "white"
+         
 
   # Main
   $(@).addClass('jquery-chess-wrapper').css({background:'transparent'})
-  board.height(size*8).width(size*8).appendTo(@)
+  #board.height(size*8).width(size*8).appendTo(@)
 
   # Create Squares
   for i in [0..63]

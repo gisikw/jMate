@@ -6,10 +6,31 @@
     %script{:src=>"https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/jquery-ui.min.js"}
     %script{:src=>'jquery.jmate.js'}
     %link{:href=>"jquery.jmate.css",:type=>"text/css",:rel=>"stylesheet"}
+    %script#pgn{:type=>"text/pgn"}
+      :plain
+        [Event "Earl tourn"]
+        [Site "?"]
+        [Date "1906.??.??"]
+        [Round "?"]
+        [White "Savrov"]
+        [Black "Alekhine, Alexander"]
+        [Result "0-1"]
+        [WhiteElo ""]
+        [BlackElo ""]
+        [ECO "C30"]
+
+        1.e4 e5 2.f4 Bc5 3.Nf3 d6 4.c3 Bg4 5.Be2 Bxf3 6.Bxf3 Nc6 7.b4 Bb6 8.b5 Nce7
+        9.d4 exd4 10.cxd4 Nf6 11.O-O O-O 12.Bb2 d5 13.e5 Nd7 14.Nc3 c6 15.Qd3 Ng6
+        16.g3 f5 17.Kh1 Qe7 18.Nxd5 cxd5 19.Bxd5+ Kh8 20.Ba3 Qd8 21.Bxb7 Rb8 22.Bxf8 Ndxf8
+        23.Bc6 Qxd4 24.Qxf5 Ne7 25.Qc2 Rc8 26.Rad1 Qb4 27.Rb1 Qa5 28.Rf3 Nxc6 29.Rc3 Rd8
+        30.bxc6 Qd5+ 31.Qg2 Qd1+ 32.Qf1 Qd5+ 33.Qf3 Qxa2 34.Rd1 Rxd1+ 35.Qxd1 Ne6
+        36.Qf3 Qb1+ 37.Kg2 g6 38.Qd3 Qg1+ 39.Kh3 h5 40.Qc4 Qd1 41.Rc1 Qg4+ 42.Kg2 h4
+        43.Qf1 g5 44.Qd1 Nxf4+ 45.Kh1  0-1
     %script
       :plain
         $(function(){
           window.board = $('chess').chessboard()
+          window.board.setPGN($('#pgn').text())
         })
   %body
     #chess{:style=>"width: 400px; height: 400px;"}

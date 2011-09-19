@@ -1,13 +1,10 @@
 (function() {
-  var $, d, pgnToCoords, pieceDict, symDict, toCart, toFAN, toFile, toIFile, toPiece, validSquare_;
+  var $, d, parsePGN, pieceDict, symDict, toCart, toFAN, toFile, toIFile, toPiece, validSquare_;
   var __indexOf = Array.prototype.indexOf || function(item) {
     for (var i = 0, l = this.length; i < l; i++) {
       if (this[i] === item) return i;
     }
     return -1;
-  };
-  pgnToCoords = function(move) {
-    return ["e2", "e4"];
   };
   $ = jQuery;
   pieceDict = {
@@ -54,8 +51,32 @@
       return pieceDict[c] || 'pawn';
     }
   };
+  parsePGN = function(text) {
+    var i, line, lines, m, moveCount, moveLines, moves, returnable, _i, _len, _ref;
+    returnable = [];
+    lines = text.split("\n");
+    moveLines = [];
+    for (_i = 0, _len = lines.length; _i < _len; _i++) {
+      line = lines[_i];
+      if ($.trim(line)[0] === '[') {
+        continue;
+      }
+      if ($.trim(line).length === 0) {
+        continue;
+      }
+      moveLines.push($.trim(line));
+    }
+    moves = moveLines.join(' ');
+    moveCount = parseInt(moves.match(/\d+\./g).pop());
+    for (i = 1, _ref = moveCount - 1; 1 <= _ref ? i <= _ref : i >= _ref; 1 <= _ref ? i++ : i--) {
+      m = moves.match(new RegExp("" + i + "\\..*" + (i + 1) + "\\.", 'g'))[0].replace("" + i + ".", '').replace("" + (i + 1) + ".", '').split(/\s+/);
+      returnable.push(m[0]);
+      returnable.push(m[1]);
+    }
+    return returnable;
+  };
   $.fn.chessboard = function() {
-    var activatePieces, allyAt_, b, board, candidateMoves, castle, coord, enPassant, enemyAt_, handler, i, movePiece, pieceAt, pieceMoves, placePiece, promotePawn, size, startTurn, threatens_, turn;
+    var activatePieces, allyAt_, b, board, candidateMoves, castle, coord, displayPGN, enPassant, enemyAt_, handler, i, movePiece, pgn, pgnIndex, pieceAt, pieceMoves, placePiece, promotePawn, sidebar, size, startTurn, threatens_, turn;
     castle = {
       black: {
         long: true,
@@ -67,9 +88,12 @@
       }
     };
     enPassant = null;
+    sidebar = null;
     board = $("div").addClass("jquery-chess-board");
     size = 50;
     turn = 'white';
+    pgn = [];
+    pgnIndex = 0;
     window.enPassant = function() {
       return enPassant;
     };
@@ -86,6 +110,25 @@
         left: (toIFile(coords[0]) - 1) * size,
         top: (8 - parseInt(coords[1])) * size
       }).appendTo(board);
+    };
+    displayPGN = function() {
+      var i, _ref;
+      board.width("" + (12 * size) + "px");
+      sidebar = $('<div>');
+      sidebar.addClass('sidebar').css({
+        left: "" + (8 * size) + "px"
+      }).height(size * 8).width(size * 4).appendTo(board);
+      $('<table>').height(size * 7).appendTo(sidebar);
+      for (i = 0, _ref = pgn.length; i <= _ref; i += 2) {
+        sidebar.find('table').append("<tr><td>" + pgn[i] + "</td><td>" + pgn[i + 1] + "</td></tr>");
+      }
+      $("<div class='navigation'><span class='back'>Back</span><span class='next'>Next</span></div>").height(size).css({
+        left: "" + (8 * size) + "px",
+        top: "" + (7 * size) + "px"
+      }).appendTo(sidebar);
+      return sidebar.find('span.next').click(function() {
+        return handler.next();
+      });
     };
     promotePawn = function(fan) {
       var col, dialog, i, piece, _i, _len, _ref;
@@ -317,10 +360,10 @@
         }
         if (!threatCheck) {
           opCol = col === 'white' ? 'black' : 'white';
-          if (castle[col]['short'] && (!(pieceAt(toFAN(x + 1, y)) != null)) && (!(pieceAt(toFAN(x + 2, y)) != null)) && (!threatens_(toFAN(x, y), opCol)) && (!threatens_(toFAN(x + 1, y), opCol)) && (!threatens(toFAN(x + 2, y), opCol))) {
+          if (castle[col]['short'] && (!(pieceAt(toFAN(x + 1, y)) != null)) && (!(pieceAt(toFAN(x + 2, y)) != null)) && (!threatens_(toFAN(x, y), opCol)) && (!threatens_(toFAN(x + 1, y), opCol)) && (!threatens_(toFAN(x + 2, y), opCol))) {
             returnable.push(toFAN(x + 2, y));
           }
-          if (castle[col]['long'] && (!(pieceAt(toFAN(x - 1, y)) != null)) && (!(pieceAt(toFAN(x - 2, y)) != null)) && (!pieceAt(toFAN(x - 3, y))) && (!threatens_(toFAN(x, y), opCol)) && (!threatens_(toFAN(x - 1, y), opCol)) && (!threatens(toFAN(x - 2, y), opCol))) {
+          if (castle[col]['long'] && (!(pieceAt(toFAN(x - 1, y)) != null)) && (!(pieceAt(toFAN(x - 2, y)) != null)) && (!pieceAt(toFAN(x - 3, y))) && (!threatens_(toFAN(x, y), opCol)) && (!threatens_(toFAN(x - 1, y), opCol)) && (!threatens_(toFAN(x - 2, y), opCol))) {
             returnable.push(toFAN(x - 2, y));
           }
         }
@@ -482,12 +525,79 @@
           _results.push(parseInt(c) ? i += parseInt(c) : (placePiece(toPiece(c, true), toFile((i % 8) + 1) + (8 - (Math.floor(i / 8)))), i++));
         }
         return _results;
+      },
+      setPGN: function(text) {
+        pgn = parsePGN(text);
+        return displayPGN();
+      },
+      next: function() {
+        this.movePGN(pgn[pgnIndex]);
+        return pgnIndex++;
+      },
+      movePGN: function(move) {
+        var castleRank, moved, pawn, piece, target, _i, _j, _k, _l, _len, _len2, _len3, _len4, _len5, _m, _ref, _ref2, _ref3, _ref4, _ref5, _ref6;
+        castleRank = turn === 'white' ? 1 : 8;
+        target = move.substring(move.length - 2);
+        if (move === 'O-O') {
+          movePiece("e" + castleRank, "g" + castleRank);
+          movePiece("h" + castleRank, "f" + castleRank);
+        } else if (move === 'O-O-O') {
+          movePiece("e" + castleRank, "c" + castleRank);
+          movePiece("a" + castleRank, "d" + castleRank);
+        } else if (move.length === 2) {
+          moved = false;
+          _ref = b(".pawn." + turn);
+          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+            pawn = _ref[_i];
+            if ($(pawn).data('pos') === move[0] + (parseInt(move[1]) + (turn === 'white' ? -1 : 1))) {
+              movePiece($(pawn).data('pos'), move);
+              moved = true;
+            }
+          }
+          if (!moved && move[1] === (turn === 'white' ? '4' : '5')) {
+            movePiece("" + move[0] + (turn === 'white' ? 2 : 7), move);
+          }
+        } else if (move.length === 3) {
+          _ref2 = b("." + pieceDict[move[0]] + "." + turn);
+          for (_j = 0, _len2 = _ref2.length; _j < _len2; _j++) {
+            piece = _ref2[_j];
+            if (__indexOf.call(candidateMoves($(piece).data('type'), $(piece).data('pos')), target) >= 0) {
+              movePiece($(piece).data('pos'), target);
+            }
+          }
+        } else if (__indexOf.call(move, 'x') >= 0 && move.length === 4) {
+          if (move[0].toUpperCase() === move[0]) {
+            _ref3 = b("." + pieceDict[move[0]] + "." + turn);
+            for (_k = 0, _len3 = _ref3.length; _k < _len3; _k++) {
+              piece = _ref3[_k];
+              if (__indexOf.call(candidateMoves($(piece).data('type'), $(piece).data('pos')), target) >= 0) {
+                movePiece($(piece).data('pos'), target);
+              }
+            }
+          } else {
+            _ref4 = b(".pawn." + turn);
+            for (_l = 0, _len4 = _ref4.length; _l < _len4; _l++) {
+              pawn = _ref4[_l];
+              if ($(pawn).data('pos')[0] === move[0]) {
+                movePiece($(pawn).data('pos'), target);
+              }
+            }
+          }
+        } else {
+          _ref5 = b("." + pieceDict[move[0]] + "." + turn);
+          for (_m = 0, _len5 = _ref5.length; _m < _len5; _m++) {
+            piece = _ref5[_m];
+            if ((_ref6 = move[1], __indexOf.call($(piece).data('pos'), _ref6) >= 0) && __indexOf.call(candidateMoves($(piece).data('type'), $(piece).data('pos')), target) >= 0) {
+              movePiece($(piece).data('pos'), target);
+            }
+          }
+        }
+        return turn = turn === "white" ? "black" : "white";
       }
     };
     $(this).addClass('jquery-chess-wrapper').css({
       background: 'transparent'
     });
-    board.height(size * 8).width(size * 8).appendTo(this);
     for (i = 0; i <= 63; i++) {
       coord = toFile((i % 8) + 1) + (8 - (Math.floor(i / 8)));
       $('<div>').addClass("square " + ((i + Math.floor(i / 8)) % 2 === 0 ? 'light' : 'dark') + " " + coord).width(size).height(size).data('pos', coord).offset({
@@ -558,5 +668,4 @@
     startTurn();
     return handler;
   };
-  window.pgnToCoords = pgnToCoords;
 }).call(this);

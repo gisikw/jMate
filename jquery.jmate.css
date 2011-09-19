@@ -1,6 +1,21 @@
 .jquery-chess-board {
   position: relative;
   border: 1px solid black; }
+  .jquery-chess-board .sidebar {
+    position: absolute;
+    border-left: 1px solid black;
+    border-right: 1px solid black; }
+    .jquery-chess-board .sidebar table {
+      display: block;
+      overflow: auto;
+      border-bottom: 1px solid black; }
+    .jquery-chess-board .sidebar .navigation span {
+      display: block;
+      float: left;
+      width: 50%;
+      height: 100%;
+      text-align: center;
+      line-height: 50px; }
   .jquery-chess-board .promotion {
     border: 1px solid #666666;
     border-radius: 10px;
